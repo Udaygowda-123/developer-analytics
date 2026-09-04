@@ -1,0 +1,32 @@
+{
+  "name": "pulse",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Self-hostable web analytics + uptime monitoring for developers",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build:shared": "npm run build -w @pulse/shared",
+    "dev": "npm run build:shared && concurrently -n web,ingest -c cyan,magenta \"npm:dev:web\" \"npm:dev:ingest\"",
+    "dev:web": "npm run dev -w @pulse/web",
+    "dev:ingest": "npm run dev -w @pulse/ingest",
+    "build": "npm run build:shared && npm run build -w @pulse/ingest && npm run build -w @pulse/web",
+    "typecheck": "npm run build:shared && npm run typecheck --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "test": "npm run build:shared && npm run test --workspaces --if-present",
+    "test:e2e": "npm run test:e2e -w @pulse/web",
+    "seed": "npm run seed -w @pulse/ingest",
+    "loadtest": "npm run loadtest -w @pulse/ingest",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "typescript": "^5.7.3"
+  }
+}
