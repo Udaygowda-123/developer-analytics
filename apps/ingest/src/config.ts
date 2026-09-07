@@ -52,6 +52,20 @@ const envSchema = z.object({
     .enum(['true', 'false'])
     .default('false')
     .transform((v) => v === 'true'),
+
+  /**
+   * Accepts synthetic `e2e:<uid>:<email>` tokens instead of real Firebase ID
+   * tokens, so the Playwright suite can exercise the authenticated flows
+   * without a live Firebase project or the Java-dependent auth emulator.
+   *
+   * Hard-refused when NODE_ENV is production — see the check in firebase.ts.
+   * This is the only bypass in the codebase and it exists solely so the E2E
+   * suite tests OUR auth plumbing rather than Google's.
+   */
+  PULSE_E2E_AUTH_BYPASS: z
+    .enum(['0', '1'])
+    .default('0')
+    .transform((v) => v === '1'),
 });
 
 export type Config = z.infer<typeof envSchema>;

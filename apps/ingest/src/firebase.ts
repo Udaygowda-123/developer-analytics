@@ -39,7 +39,37 @@ export interface TokenVerifier {
 
 let verifier: TokenVerifier | null = null;
 
+/**
+ * The E2E bypass verifier. Accepts `e2e:<uid>:<email>` and nothing else.
+ *
+ * Guarded three ways: it is only constructed when PULSE_E2E_AUTH_BYPASS=1, it
+ * throws outright if NODE_ENV is production, and it accepts only tokens with
+ * the literal `e2e:` prefix so it cannot accidentally admit a malformed real
+ * token.
+ */
+function buildE2EVerifier(): TokenVerifier {
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error(
+      'PULSE_E2E_AUTH_BYPASS must never be enabled in production. Refusing to start.',
+    );
+  }
+  log.warn('E2E AUTH BYPASS ENABLED — synthetic tokens are accepted. Never use this in production.');
+
+  return {
+    async verify(idToken: string) {
+      const match = /^e2e:([\w-]{1,64}):(.+@.+)$/.exec(idToken);
+      if (!match) throw Object.assign(new Error('Invalid e2e token'), { code: 'auth/argument-error' });
+      return { uid: match[1], email: match[2], name: match[2]?.split('@')[0] } as DecodedIdToken;
+    },
+  };
+}
+
 export function getTokenVerifier(): TokenVerifier {
+  if (!verifier && getConfig().PULSE_E2E_AUTH_BYPASS) {
+    verifier = buildE2EVerifier();
+    return verifier;
+  }
+
   verifier ??= {
     async verify(idToken: string) {
       // checkRevoked: true costs a round trip but means signing out on one
